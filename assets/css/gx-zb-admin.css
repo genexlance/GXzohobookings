@@ -1,0 +1,257 @@
+.gx-zb-status-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 0 0 20px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.gx-zb-status-card .gx-zb-status-dot {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+.gx-zb-status-card.is-connected .gx-zb-status-dot {
+    background: #46b450;
+}
+
+.gx-zb-status-card.is-disconnected .gx-zb-status-dot {
+    background: #ccc;
+}
+
+.gx-zb-status-card .gx-zb-status-label {
+    font-weight: 600;
+}
+
+.gx-zb-status-card .gx-zb-status-meta {
+    color: #666;
+    font-size: 13px;
+}
+
+.gx-zb-status-card .gx-zb-action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.gx-zb-settings-section {
+    margin: 20px 0;
+}
+
+.gx-zb-settings-section h2 {
+    font-size: 1.2em;
+    margin: 0 0 12px 0;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.gx-zb-form-table {
+    margin: 0;
+}
+
+.gx-zb-form-table th {
+    vertical-align: top;
+    padding: 12px 10px 12px 0;
+    width: 200px;
+}
+
+.gx-zb-form-table td {
+    padding: 12px 0;
+}
+
+.gx-zb-form-table input[type="text"],
+.gx-zb-form-table input[type="password"],
+.gx-zb-form-table input[type="number"],
+.gx-zb-form-table select,
+.gx-zb-form-table textarea {
+    width: 100%;
+    max-width: 400px;
+}
+
+.gx-zb-form-table .description {
+    color: #666;
+    font-style: italic;
+    margin: 4px 0 0;
+}
+
+.gx-zb-readonly-field {
+    background: #f1f1f1;
+    padding: 6px 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 13px;
+    cursor: text;
+    user-select: all;
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.gx-zb-copy-hint {
+    font-size: 12px;
+    color: #888;
+    margin-left: 4px;
+}
+
+.gx-zb-submit-wrap {
+    margin: 20px 0;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.gx-zb-cache-tools {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 16px 20px;
+    margin: 20px 0;
+}
+
+.gx-zb-cache-tools h3 {
+    margin: 0 0 8px 0;
+    font-size: 1em;
+}
+
+.gx-zb-notice {
+    margin: 10px 0 16px 0;
+}
+
+.gx-zb-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* v1.1.0 additions */
+
+/* Stat cards row */
+.gx-zb-stats {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+/* Single stat card */
+.gx-zb-stat {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 8px;
+    padding: 20px 24px;
+    flex: 1;
+    min-width: 150px;
+}
+.gx-zb-stat .gx-zb-stat-number {
+    font-size: 2.2em;
+    font-weight: 600;
+    line-height: 1.2;
+    margin: 0 0 4px;
+}
+.gx-zb-stat .gx-zb-stat-label {
+    color: #646970;
+    font-size: 0.9em;
+    margin: 0;
+}
+
+/* Status badges */
+.gx-zb-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.gx-zb-badge-upcoming {
+    background: #c6e0f5;
+    color: #1d4e89;
+}
+.gx-zb-badge-completed {
+    background: #d5f0e0;
+    color: #1e6b45;
+}
+.gx-zb-badge-cancel,
+.gx-zb-badge-cancelled {
+    background: #f1f1f1;
+    color: #646970;
+}
+.gx-zb-badge-noshow {
+    background: #fce2e2;
+    color: #b32d2e;
+}
+
+/* Slot buttons grid */
+.gx-zb-slots {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+.gx-zb-slots .gx-zb-slot-btn {
+    display: inline-block;
+    padding: 8px 16px;
+    border: 1px solid #c3c4c7;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: background 0.15s, border-color 0.15s;
+}
+.gx-zb-slots .gx-zb-slot-btn:hover,
+.gx-zb-slots .gx-zb-slot-btn:focus {
+    border-color: #2271b1;
+    background: #f0f6fc;
+}
+.gx-zb-slots .gx-zb-slot-btn.is-selected {
+    background: #2271b1;
+    border-color: #2271b1;
+    color: #fff;
+}
+
+/* Booking form card */
+.gx-zb-booking-form {
+    max-width: 640px;
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 20px;
+}
+.gx-zb-booking-form .gx-zb-field {
+    margin-bottom: 16px;
+}
+.gx-zb-booking-form label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.gx-zb-booking-form input[type="text"],
+.gx-zb-booking-form input[type="email"],
+.gx-zb-booking-form input[type="date"],
+.gx-zb-booking-form select {
+    width: 100%;
+}
+
+/* Admin bar count badge */
+.gx-zb-ab-count {
+    display: inline-block;
+    background: #d63638;
+    color: #fff;
+    border-radius: 10px;
+    padding: 0 6px;
+    margin-left: 4px;
+    font-size: 11px;
+    line-height: 1.6;
+    font-weight: 600;
+    vertical-align: middle;
+}

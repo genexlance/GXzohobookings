@@ -1,0 +1,23 @@
+{
+	"apiVersion": 3,
+	"name": "gx-zoho-bookings/embed",
+	"title": "Zoho Bookings Embed",
+	"category": "embed",
+	"icon": "embed-generic",
+	"description": "Embed your Zoho Bookings page via iframe.",
+	"textdomain": "gx-zoho-bookings",
+	"attributes": {
+		"url": {
+			"type": "string",
+			"default": ""
+		},
+		"height": {
+			"type": "number",
+			"default": 750
+		}
+	},
+	"editorScript": "file:./index.js",
+	"supports": {
+		"html": false
+	}
+}

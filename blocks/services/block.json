@@ -1,0 +1,41 @@
+{
+	"apiVersion": 3,
+	"name": "gx-zoho-bookings/services",
+	"title": "Zoho Bookings Services",
+	"category": "widgets",
+	"icon": "list-view",
+	"description": "Display your Zoho Bookings services list.",
+	"textdomain": "gx-zoho-bookings",
+	"attributes": {
+		"workspace": {
+			"type": "string",
+			"default": ""
+		},
+		"columns": {
+			"type": "number",
+			"default": 3,
+			"minimum": 1,
+			"maximum": 4
+		},
+		"showDescription": {
+			"type": "boolean",
+			"default": true
+		},
+		"showDuration": {
+			"type": "boolean",
+			"default": true
+		},
+		"bookLabel": {
+			"type": "string",
+			"default": ""
+		},
+		"payLabel": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"editorScript": "file:./index.js",
+	"supports": {
+		"html": false
+	}
+}

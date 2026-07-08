@@ -1,0 +1,19 @@
+{
+	"apiVersion": 3,
+	"name": "gx-zoho-bookings/service",
+	"title": "Zoho Bookings Service",
+	"category": "widgets",
+	"icon": "calendar-alt",
+	"description": "Show a single service as a landing card with a Book & Pay button.",
+	"textdomain": "gx-zoho-bookings",
+	"attributes": {
+		"serviceId": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"editorScript": "file:./index.js",
+	"supports": {
+		"html": false
+	}
+}

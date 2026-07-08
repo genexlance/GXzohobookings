@@ -1,0 +1,294 @@
+.gx-zb-embed {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.gx-zb-embed iframe {
+    width: 100%;
+    border: 0;
+    display: block;
+}
+
+.gx-zb-services {
+    display: grid;
+    gap: 24px;
+    margin: 20px 0;
+}
+
+.gx-zb-services.gx-zb-cols-1 {
+    grid-template-columns: 1fr;
+}
+
+.gx-zb-services.gx-zb-cols-2 {
+    grid-template-columns: repeat(2, 1fr);
+}
+
+.gx-zb-services.gx-zb-cols-3 {
+    grid-template-columns: repeat(3, 1fr);
+}
+
+.gx-zb-services.gx-zb-cols-4 {
+    grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 767px) {
+    .gx-zb-services {
+        grid-template-columns: 1fr !important;
+    }
+}
+
+.gx-zb-service-card {
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    background: #fff;
+    transition: box-shadow 0.2s ease;
+}
+
+.gx-zb-service-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.gx-zb-service-card h3 {
+    margin: 0 0 8px 0;
+    font-size: 1.1em;
+}
+
+.gx-zb-service-card .gx-zb-service-duration {
+    color: #666;
+    font-size: 0.9em;
+    margin-bottom: 8px;
+}
+
+.gx-zb-service-card .gx-zb-service-description {
+    color: #444;
+    font-size: 0.95em;
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.gx-zb-service-card .gx-zb-service-price {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 12px;
+}
+
+.gx-zb-service-card .gx-zb-service-book {
+    display: inline-block;
+    padding: 8px 16px;
+    background: #2271b1;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.gx-zb-service-card .gx-zb-service-book:hover {
+    background: #135e96;
+}
+
+.gx-zb-service-card .gx-zb-service-free {
+    color: #1a7f37;
+}
+
+.gx-zb-service-card .gx-zb-service-pay {
+    background: #635bff;
+}
+
+.gx-zb-service-card .gx-zb-service-pay:hover {
+    background: #4b44d6;
+}
+
+.gx-zb-service-card h3 a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.gx-zb-service-card h3 a:hover {
+    text-decoration: underline;
+}
+
+.gx-zb-error {
+    color: #856404;
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin: 20px 0;
+    font-size: 0.95em;
+}
+
+.gx-zb-error p {
+    margin: 0;
+}
+
+.gx-zb-info {
+    color: #1d2327;
+    background: #f0f6fc;
+    border: 1px solid #c5d9ed;
+    border-radius: 4px;
+    padding: 12px 16px;
+    margin: 20px 0;
+    font-size: 0.95em;
+}
+
+/* v1.4.0 — native booking form + Stripe payment */
+.gx-zb-book-form {
+    max-width: 560px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 24px;
+    background: #fff;
+}
+.gx-zb-book-form .gx-zb-field { margin-bottom: 16px; }
+.gx-zb-book-form label { display: block; font-weight: 600; margin-bottom: 4px; }
+.gx-zb-book-form input[type="text"],
+.gx-zb-book-form input[type="email"],
+.gx-zb-book-form input[type="tel"],
+.gx-zb-book-form input[type="date"],
+.gx-zb-book-form select { width: 100%; padding: 9px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+.gx-zb-book-form .gx-zb-slots { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; }
+.gx-zb-book-form .gx-zb-slot {
+    padding: 8px 14px; border: 1px solid #c3c4c7; border-radius: 6px;
+    background: #f7f7f7; cursor: pointer; font-size: 0.9em;
+}
+.gx-zb-book-form .gx-zb-slot:hover { border-color: #2271b1; background: #f0f6fc; }
+.gx-zb-book-form .gx-zb-slot.is-selected { background: #2271b1; border-color: #2271b1; color: #fff; }
+.gx-zb-pay-note {
+    margin: 4px 0 16px; padding: 10px 14px; border-radius: 6px;
+    background: #f0f6fc; border: 1px solid #c5d9ed; font-size: 0.95em;
+}
+.gx-zb-pay-note .gx-zb-price { font-weight: 700; }
+.gx-zb-submit-button {
+    padding: 11px 22px; background: #2271b1; color: #fff; border: 0;
+    border-radius: 4px; cursor: pointer; font-size: 1em;
+}
+.gx-zb-submit-button:disabled { background: #a0a5aa; cursor: not-allowed; }
+.gx-zb-book-result { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; }
+.gx-zb-book-result.success { background: #d5f0e0; border: 1px solid #46b450; color: #1e6b45; }
+.gx-zb-book-result.error { background: #fce2e2; border: 1px solid #d63638; color: #b32d2e; }
+.gx-zb-book-result.cancel { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
+
+/* v1.5.0 — single-service landing card */
+.gx-zb-service-landing {
+    max-width: 520px;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 28px;
+    margin: 0 auto;
+}
+.gx-zb-service-landing h2 {
+    margin: 0 0 8px;
+}
+.gx-zb-sl-meta {
+    color: #6b6b6b;
+    font-size: 0.9em;
+}
+.gx-zb-sl-price {
+    font-size: 1.5em;
+    font-weight: 700;
+}
+.gx-zb-sl-desc {
+    line-height: 1.6;
+    margin: 12px 0;
+}
+.gx-zb-sl-button {
+    display: block;
+    background-color: #2271b1;
+    color: #fff;
+    padding: 14px;
+    border-radius: 6px;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 600;
+    transition: background-color 0.2s ease;
+}
+.gx-zb-sl-button:hover {
+    background-color: #135e96;
+}
+.gx-zb-sl-free {
+    display: inline-block;
+    background-color: #46b450;
+    color: #fff;
+    border-radius: 999px;
+    padding: 4px 12px;
+    font-size: 0.85em;
+}
+/* Contrast + focus accessibility (v1.7.0) */
+.gx-zb-book-form .gx-zb-slot {
+    color: #1e1e1e;
+}
+.gx-zb-book-form .gx-zb-slot:focus-visible,
+.gx-zb-book-form input:focus-visible,
+.gx-zb-book-form select:focus-visible,
+.gx-zb-book-form .gx-zb-submit-button:focus-visible {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}
+.gx-zb-submit-button:disabled {
+    background: #787c82;
+}
+.gx-zb-pay-note {
+    color: #1e1e1e;
+}
+.gx-zb-service-card .gx-zb-service-duration,
+.gx-zb-service-card .gx-zb-service-description {
+    color: #4a4a4a;
+}
+
+/* Booking confirmation panel + calendar links (v1.7.0) */
+.gx-zb-confirmation {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 24px;
+    max-width: 560px;
+}
+.gx-zb-conf-details {
+    color: #1e1e1e;
+    margin: 0 0 16px;
+}
+.gx-zb-cal-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.gx-zb-cal-btn {
+    display: inline-block;
+    padding: 10px 18px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #fff;
+    transition: filter 0.2s;
+}
+.gx-zb-cal-btn:hover {
+    filter: brightness(85%);
+    color: #fff;
+}
+.gx-zb-cal-btn:focus-visible {
+    outline: 2px solid #2271b1;
+    outline-offset: 2px;
+}
+.gx-zb-cal-google {
+    background: #1e6b45;
+}
+.gx-zb-cal-ics {
+    background: #1a1f36;
+}
+.gx-zb-book-another a {
+    color: #135e96;
+    text-decoration: underline;
+}
+.gx-zb-cal-lead {
+    color: #1e1e1e;
+    margin: 0 0 10px;
+}
+
+/* v1.9.0 — staff video call link on confirmation */
+.gx-zb-video-btn {
+    background: #635bff;
+}
+.gx-zb-conf-video {
+    margin: 10px 0 0;
+}

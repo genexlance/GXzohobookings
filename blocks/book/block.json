@@ -1,0 +1,33 @@
+{
+    "$schema": "https://schemas.wp.org/trunk/block.json",
+    "apiVersion": 3,
+    "name": "gx-zoho-bookings/book",
+    "version": "1.0.0",
+    "title": "Zoho Bookings Form",
+    "category": "widgets",
+    "icon": "calendar-alt",
+    "description": "Native booking form: pick a service, staff and time, then pay if the service has a price.",
+    "textdomain": "gx-zoho-bookings",
+    "attributes": {
+        "serviceId": {
+            "type": "string",
+            "default": ""
+        },
+        "showPhone": {
+            "type": "boolean",
+            "default": true
+        },
+        "requirePhone": {
+            "type": "boolean",
+            "default": true
+        },
+        "showNotes": {
+            "type": "boolean",
+            "default": false
+        }
+    },
+    "supports": {
+        "html": false
+    },
+    "editorScript": "file:./index.js"
+}
