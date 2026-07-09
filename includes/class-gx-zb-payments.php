@@ -585,6 +585,7 @@ final class GX_ZB_Payments {
 			'staff_name'   => '',
 			'start_time'   => $from_time,
 			'end_time'     => $to_time,
+			'duration'     => $service_duration,
 			'timezone'     => wp_timezone_string(),
 			'cost'         => $cost,
 			'notes'        => $notes,

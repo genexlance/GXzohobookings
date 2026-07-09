@@ -162,33 +162,23 @@ final class GX_ZB_Service_Pages {
 			$name = isset( $service['name'] ) ? $service['name'] : '';
 			$cost = isset( $service['cost'] ) ? floatval( $service['cost'] ) : 0.0;
 
-			$payment_url = '';
-			if ( $cost > 0 && class_exists( 'GX_ZB_Stripe' ) && GX_ZB_Stripe::instance()->is_enabled() ) {
-				$stripe = GX_ZB_Stripe::instance();
-				$result = $stripe->create_payment_link(
-					array(
-						'amount_cents' => (int) round( $cost * 100 ),
-						'currency'     => $stripe->currency(),
-						'product_name' => $name,
-					)
-				);
-				if ( ! is_wp_error( $result ) && isset( $result['url'] ) ) {
-					$payment_url = $result['url'];
-				}
-			}
-
 			$existing = isset( $map[ $sid ] ) ? $map[ $sid ] : null;
 			$page_id  = null;
 			$created  = false;
 
-			// If the page already exists, reuse it and DO NOT overwrite its
-			// content — an editor may have customised it in the block editor.
+			// Reuse any non-trashed mapped page (draft/pending/private/publish).
+			// Only create a new page when the mapped one is missing or trashed —
+			// otherwise regenerating orphans drafts and duplicates slugs.
 			if ( $existing && isset( $existing['page_id'] ) && $existing['page_id'] ) {
 				$page = get_post( $existing['page_id'] );
-				if ( $page && 'page' === $page->post_type && 'publish' === $page->post_status ) {
+				if ( $page && 'page' === $page->post_type && 'trash' !== $page->post_status ) {
 					$page_id = $page->ID;
 				}
 			}
+
+			// Keep an existing payment_url when reusing a page. Only hit Stripe
+			// when creating a brand-new page (fallback for grids with no page_url).
+			$payment_url = ( $existing && ! empty( $existing['payment_url'] ) ) ? $existing['payment_url'] : '';
 
 			if ( ! $page_id ) {
 				$page_data = array(
@@ -203,6 +193,20 @@ final class GX_ZB_Service_Pages {
 					continue;
 				}
 				$created = true;
+
+				if ( '' === $payment_url && $cost > 0 && class_exists( 'GX_ZB_Stripe' ) && GX_ZB_Stripe::instance()->is_enabled() ) {
+					$stripe = GX_ZB_Stripe::instance();
+					$result = $stripe->create_payment_link(
+						array(
+							'amount_cents' => (int) round( $cost * 100 ),
+							'currency'     => $stripe->currency(),
+							'product_name' => $name,
+						)
+					);
+					if ( ! is_wp_error( $result ) && isset( $result['url'] ) ) {
+						$payment_url = $result['url'];
+					}
+				}
 			}
 
 			$map[ $sid ] = array(

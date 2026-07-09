@@ -495,6 +495,9 @@ final class GX_ZB_MCP_Server {
 	 */
 	private function date_to_zoho( $date ) {
 		$dt = DateTime::createFromFormat( 'Y-m-d', $date );
+		if ( ! $dt ) {
+			return '';
+		}
 		return $dt->format( 'd-M-Y' );
 	}
 

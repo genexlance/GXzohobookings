@@ -64,12 +64,13 @@ final class GX_ZB_CRM {
 	 *     @type string $staff_name   Staff member name.
 	 *     @type string $start_time   Start time in `dd-MMM-yyyy HH:mm:ss` format.
 	 *     @type string $end_time     End time in same format; may be empty.
+	 *     @type int    $duration     Optional. Service duration in minutes (used when end_time empty).
 	 *     @type string $timezone     Timezone string, e.g. `America/New_York`.
 	 *     @type float  $cost         Booking cost.
 	 *     @type string $notes        Additional notes.
 	 * }
 	 *
-	 * @return array|WP_Error Array with keys `contact_id` and `event_id` on success; WP_Error on failure.
+	 * @return array|false|WP_Error Array with keys `contact_id` and `event_id` on success; false if disabled; WP_Error on failure.
 	 */
 	public function sync_booking( array $booking ) {
 		if ( ! $this->is_enabled() ) {
@@ -168,10 +169,13 @@ final class GX_ZB_CRM {
 		$start_raw = isset( $booking['start_time'] ) ? $booking['start_time'] : '';
 		$start_iso = $this->to_iso8601( $start_raw, $timezone );
 		if ( empty( $booking['end_time'] ) ) {
-			// If end is empty, add 60 minutes.
+			$duration_min = isset( $booking['duration'] ) ? (int) $booking['duration'] : 0;
+			if ( $duration_min < 1 ) {
+				$duration_min = 60;
+			}
 			$start_dt = date_create( $start_iso );
 			if ( $start_dt ) {
-				$start_dt->modify( '+60 minutes' );
+				$start_dt->modify( '+' . $duration_min . ' minutes' );
 				$end_iso = $start_dt->format( 'c' );
 			} else {
 				$end_iso = $start_iso;

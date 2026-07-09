@@ -90,7 +90,7 @@ final class GX_ZB_Services_Admin {
 		<div class="wrap gx-zb-services">
 			<h1>
 				<?php esc_html_e( 'Zoho Bookings Services', 'gx-zoho-bookings' ); ?>
-				<a href="<?php echo esc_url( add_query_arg( 'view', 'new', admin_url( 'admin.php?page=gx-zb-services' ) ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add New Service', 'gx-zoho-bookings' ); ?></a>
+				<a href="<?php echo esc_url( add_query_arg( array( 'view' => 'new', 'workspace' => $workspace_id ), admin_url( 'admin.php?page=gx-zb-services' ) ) ); ?>" class="page-title-action"><?php esc_html_e( 'Add New Service', 'gx-zoho-bookings' ); ?></a>
 			</h1>
 
 			<form method="get" action="<?php echo esc_url( admin_url( 'admin.php' ) ); ?>">
@@ -209,15 +209,35 @@ final class GX_ZB_Services_Admin {
 		$api_client = GX_ZB_API_Client::instance();
 		$staff      = $api_client->get_staff();
 		$staff_list = is_wp_error( $staff ) ? [] : $staff;
+		$workspaces = $api_client->get_workspaces();
+		$workspace_list = is_wp_error( $workspaces ) ? array() : $workspaces;
 		?>
 		<div class="wrap gx-zb-services">
 			<h1><?php esc_html_e( 'Add New Service', 'gx-zoho-bookings' ); ?></h1>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="gx-zb-booking-form">
 				<input type="hidden" name="action" value="gx_zb_service_save">
 				<?php wp_nonce_field( 'gx_zb_service_save' ); ?>
-				<input type="hidden" name="workspace_id" value="<?php echo esc_attr( $workspace_id ); ?>">
+				<?php if ( $workspace_id ) : ?>
+					<input type="hidden" name="workspace_id" value="<?php echo esc_attr( $workspace_id ); ?>">
+				<?php endif; ?>
 
 				<table class="form-table">
+					<?php if ( ! $workspace_id ) : ?>
+					<tr>
+						<th><label for="gx-zb-service-workspace"><?php esc_html_e( 'Workspace', 'gx-zoho-bookings' ); ?></label></th>
+						<td>
+							<select id="gx-zb-service-workspace" name="workspace_id" required>
+								<option value=""><?php esc_html_e( 'Select a workspace…', 'gx-zoho-bookings' ); ?></option>
+								<?php foreach ( $workspace_list as $ws ) :
+									$ws_id   = $ws['id'] ?? $ws['workspace_id'] ?? '';
+									$ws_name = $ws['name'] ?? '';
+									?>
+									<option value="<?php echo esc_attr( $ws_id ); ?>"><?php echo esc_html( $ws_name ); ?></option>
+								<?php endforeach; ?>
+							</select>
+						</td>
+					</tr>
+					<?php endif; ?>
 					<tr>
 						<th><label for="gx-zb-service-name"><?php esc_html_e( 'Name', 'gx-zoho-bookings' ); ?></label></th>
 						<td><input type="text" id="gx-zb-service-name" name="name" required class="regular-text"></td>
