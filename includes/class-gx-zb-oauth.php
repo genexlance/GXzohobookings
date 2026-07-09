@@ -71,10 +71,14 @@ final class GX_ZB_OAuth {
 		$redirect_uri = $this->redirect_uri();
 		$state        = wp_create_nonce( 'gx_zb_oauth_state' );
 
-		// FUTURE (paid plan): append extra scopes here (e.g. payments, Zoho CRM
-		// sync) once those integrations ship.
+		// Zoho CRM sync (paid) needs an extra scope. Only requested when the
+		// admin has enabled CRM, so free-plan users keep the minimal consent.
+		$scopes = array( 'zohobookings.data.CREATE', 'zohobookings.data.READ' );
+		if ( $settings->get( 'crm_enabled' ) ) {
+			$scopes[] = 'ZohoCRM.modules.ALL';
+		}
 		$params = array(
-			'scope'         => 'zohobookings.data.CREATE,zohobookings.data.READ',
+			'scope'         => implode( ',', $scopes ),
 			'client_id'     => $client_id,
 			'response_type' => 'code',
 			'redirect_uri'  => $redirect_uri,

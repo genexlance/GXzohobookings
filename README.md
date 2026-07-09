@@ -223,7 +223,7 @@ Successful API responses are cached in transients (default 15 minutes, configura
 
 ## Free plan limitations
 
-The Zoho Bookings Free plan typically allows one workspace, one staff member and basic appointment features. This plugin only uses read-and-display API calls that work on the Free plan. Booking creation via API, payments, resource/group booking and CRM sync are intentionally out of scope for v1 — extension points are marked in code with `// FUTURE (paid plan):`.
+The Zoho Bookings Free plan typically allows one workspace, one staff member and basic appointment features, which the plugin fully supports. **Paid-plan features** — resource booking, group/collective booking, custom booking fields, multiple workspaces, extra staff and Zoho CRM sync — are supported as of v2.0.0 but require a paid Zoho Bookings plan (and, for CRM, a Zoho CRM subscription). See **Paid-plan features** below.
 
 ## FAQ
 
@@ -298,7 +298,29 @@ AI agents can also generate a payment link with the MCP tool `create_payment_lin
 
 **Settings → Zoho Bookings → Service landing pages → Generate / refresh landing pages** creates one WordPress page per service, each showing that service and a **Book & Pay** button backed by its own Stripe payment link (paid services) or the inline booking form (free services). Re-run any time to refresh links or pick up new services. Each page is built from Gutenberg blocks — a heading, an intro paragraph, and the dynamic **Zoho Bookings Service** block (also insertable from the block inserter) — so you can freely edit and rearrange them in the block editor. The `[zoho_bookings_service id="…"]` shortcode remains available for classic content.
 
+## Paid-plan features (v2.0)
+
+To use resource booking, group booking, or custom fields you need a paid Zoho Bookings plan. These features are configured under **Settings → Paid-plan features** (and, for custom fields, **Zoho Bookings → Custom Fields**).
+
+**Enable CRM sync** to push confirmed bookings into Zoho CRM. Toggle "Zoho CRM sync" on, then reconnect to Zoho (disconnect, then Connect again) so the additional `ZohoCRM.modules.ALL` scope is granted. Once connected, every confirmed booking upserts a Contact (matched by email) and logs a meeting/Event in CRM. If a CRM call fails, the booking is never blocked — the error is logged.
+
+**Select an active workspace** from the "Active workspace" dropdown. Services, staff and appointments are then read from that workspace. Switch at any time.
+
+**Define custom fields per service** under **Zoho Bookings → Custom Fields**: pick a service, add rows (label, type, whether required), and save. The fields appear on that service's booking form and are sent to Zoho as `additional_fields`.
+
+**View reports** under **Zoho Bookings → Reports**: total revenue, booking counts by status, revenue by service and bookings per staff, with a date-range filter. The same data is available to AI agents via the MCP tool `get_reports`.
+
 ## Changelog
+
+### 2.0.0 — Paid-plan features
+- **Resource booking**: services can be booked against a specific resource with a start and end time. New API support plus MCP tools `book_resource` and `list_resources`.
+- **Group / collective booking**: book a service for a group (all attendees share one slot) via the new MCP tool `book_group` (uses a `group_id`).
+- **Custom booking fields**: define per-service extra fields (text, textarea, select, checkbox, required) under **Zoho Bookings → Custom Fields**. They render on the booking form and are sent to Zoho as `additional_fields`.
+- **Multiple workspaces**: choose an active workspace under **Settings → Paid-plan features**; services, staff and appointments are read from it.
+- **Team / multi-staff**: removed the free-plan one-staff messaging — add as many staff as your Zoho plan allows.
+- **Revenue & bookings reports**: new **Zoho Bookings → Reports** page with totals, counts by status, revenue by service and bookings by staff, plus a date-range filter. Also available via the MCP tool `get_reports`.
+- **Zoho CRM sync** (optional): each confirmed booking upserts a Contact (by email) and logs a meeting/Event in Zoho CRM. Enable under **Settings → Paid-plan features** and reconnect to Zoho so the extra scope (`ZohoCRM.modules.ALL`) is granted. CRM failures never block a booking.
+- Companion simulator updated (v1.5.0) to demo resources and CRM sync with fake data.
 
 ### 1.9.0
 - Per-staff video conference links: each staff member gets their own meeting URL (Google Meet, Zoom, …) on the Staff page. The link becomes the calendar event location, is added to the event description, and shows as a **Join video call** button on the booking confirmation. (The Zoho Bookings API has no staff video field, so links are stored site-side.)

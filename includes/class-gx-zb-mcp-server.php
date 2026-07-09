@@ -926,6 +926,153 @@ final class GX_ZB_MCP_Server {
 		);
 	}
 
+	/**
+	 * Tool: list_resources (paid).
+	 *
+	 * @since 2.0.0
+	 * @param array $args Validated arguments (optional service_id).
+	 * @return array|WP_Error
+	 */
+	private function tool_list_resources( $args ) {
+		$service_id = isset( $args['service_id'] ) ? $args['service_id'] : '';
+		return GX_ZB_API_Client::instance()->get_resources( $service_id );
+	}
+
+	/**
+	 * Tool: book_resource (paid resource booking).
+	 *
+	 * @since 2.0.0
+	 * @param array $args Validated arguments.
+	 * @return array|WP_Error
+	 */
+	private function tool_book_resource( $args ) {
+		$from_time = $this->combine_date_time( $args['date'], $args['start_time'] );
+		if ( is_wp_error( $from_time ) ) {
+			return $from_time;
+		}
+		$to_time = $this->combine_date_time( $args['date'], $args['end_time'] );
+		if ( is_wp_error( $to_time ) ) {
+			return $to_time;
+		}
+
+		$create_args = array(
+			'service_id'       => $args['service_id'],
+			'resource_id'      => $args['resource_id'],
+			'from_time'        => $from_time,
+			'to_time'          => $to_time,
+			'timezone'         => wp_timezone_string(),
+			'customer_details' => array(
+				'name'         => $args['customer_name'],
+				'email'        => $args['customer_email'],
+				'phone_number' => isset( $args['customer_phone'] ) ? $args['customer_phone'] : '',
+			),
+		);
+		if ( ! empty( $args['notes'] ) ) {
+			$create_args['notes'] = $args['notes'];
+		}
+
+		$result = GX_ZB_API_Client::instance()->create_appointment( $create_args );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		return array( 'ok' => true, 'data' => $result );
+	}
+
+	/**
+	 * Tool: book_group (paid collective booking).
+	 *
+	 * @since 2.0.0
+	 * @param array $args Validated arguments.
+	 * @return array|WP_Error
+	 */
+	private function tool_book_group( $args ) {
+		$from_time = $this->combine_date_time( $args['date'], $args['time'] );
+		if ( is_wp_error( $from_time ) ) {
+			return $from_time;
+		}
+
+		$create_args = array(
+			'service_id'       => $args['service_id'],
+			'group_id'         => $args['group_id'],
+			'from_time'        => $from_time,
+			'timezone'         => wp_timezone_string(),
+			'customer_details' => array(
+				'name'         => $args['customer_name'],
+				'email'        => $args['customer_email'],
+				'phone_number' => isset( $args['customer_phone'] ) ? $args['customer_phone'] : '',
+			),
+		);
+		if ( ! empty( $args['notes'] ) ) {
+			$create_args['notes'] = $args['notes'];
+		}
+
+		$result = GX_ZB_API_Client::instance()->create_appointment( $create_args );
+		if ( is_wp_error( $result ) ) {
+			return $result;
+		}
+		return array( 'ok' => true, 'data' => $result );
+	}
+
+	/**
+	 * Tool: get_reports (paid).
+	 *
+	 * Aggregates appointment counts + revenue over a date range.
+	 *
+	 * @since 2.0.0
+	 * @param array $args Validated arguments (from_date, to_date).
+	 * @return array|WP_Error
+	 */
+	private function tool_get_reports( $args ) {
+		$client   = GX_ZB_API_Client::instance();
+		$from     = $this->date_to_zoho( $args['from_date'] );
+		$to       = $this->date_to_zoho( $args['to_date'] );
+		$statuses = array( 'upcoming', 'completed', 'cancel', 'noshow' );
+
+		$counts        = array_fill_keys( $statuses, 0 );
+		$total         = 0;
+		$revenue       = 0.0;
+		$by_service    = array();
+
+		foreach ( $statuses as $status ) {
+			$rows = $client->get_appointments(
+				array(
+					'from_time' => $from,
+					'to_time'   => $to,
+					'status'    => $status,
+				)
+			);
+			if ( is_wp_error( $rows ) || ! is_array( $rows ) ) {
+				continue;
+			}
+			foreach ( $rows as $row ) {
+				if ( ! is_array( $row ) ) {
+					continue;
+				}
+				$counts[ $status ]++;
+				$total++;
+				$cost    = isset( $row['cost'] ) ? (float) $row['cost'] : 0.0;
+				$service = isset( $row['service_name'] ) ? (string) $row['service_name'] : 'Unknown';
+				if ( ! isset( $by_service[ $service ] ) ) {
+					$by_service[ $service ] = array( 'bookings' => 0, 'revenue' => 0.0 );
+				}
+				$by_service[ $service ]['bookings']++;
+				if ( in_array( $status, array( 'upcoming', 'completed' ), true ) ) {
+					$revenue += $cost;
+					$by_service[ $service ]['revenue'] += $cost;
+				}
+			}
+		}
+
+		return array(
+			'ok'             => true,
+			'total_bookings' => $total,
+			'counts'         => $counts,
+			'total_revenue'  => round( $revenue, 2 ),
+			'currency'       => strtoupper( (string) GX_ZB_Settings::instance()->get( 'stripe_currency', 'usd' ) ),
+			'by_service'     => $by_service,
+		);
+	}
+
 	// =========================================================================
 	// Tool definitions + JSON-RPC envelopes
 	// =========================================================================
@@ -1223,7 +1370,65 @@ final class GX_ZB_MCP_Server {
 				),
 				'tool_create_payment_link',
 			),
-			// FUTURE (paid plan): payment capture webhooks + multi-resource booking tools.
+			'list_resources'         => array(
+				'List bookable resources (paid: resource booking). Optionally filter by service_id.',
+				array(
+					'type'       => 'object',
+					'properties' => array(
+						'service_id' => array( 'type' => 'string', 'description' => 'Optional service id to filter resources.' ),
+					),
+				),
+				'tool_list_resources',
+			),
+			'book_resource'          => array(
+				'Book a resource-based service for a time range (paid). Requires service_id, resource_id, date, start time and end time, and customer details.',
+				array(
+					'type'       => 'object',
+					'properties' => array(
+						'service_id'     => array( 'type' => 'string', 'description' => 'Resource service id from list_services.' ),
+						'resource_id'    => array( 'type' => 'string', 'description' => 'Resource id from list_resources.' ),
+						'date'           => array( 'type' => 'string', 'description' => 'Date YYYY-MM-DD.' ),
+						'start_time'     => array( 'type' => 'string', 'description' => 'Start time HH:mm (24h).' ),
+						'end_time'       => array( 'type' => 'string', 'description' => 'End time HH:mm (24h). Required for resource bookings.' ),
+						'customer_name'  => array( 'type' => 'string', 'description' => 'Customer full name.' ),
+						'customer_email' => array( 'type' => 'string', 'format' => 'email', 'description' => 'Customer email.' ),
+						'customer_phone' => array( 'type' => 'string', 'description' => 'Optional customer phone.' ),
+						'notes'          => array( 'type' => 'string', 'description' => 'Optional notes.' ),
+					),
+					'required'   => array( 'service_id', 'resource_id', 'date', 'start_time', 'end_time', 'customer_name', 'customer_email' ),
+				),
+				'tool_book_resource',
+			),
+			'book_group'             => array(
+				'Book a group/collective service (paid). Uses a group_id instead of a staff member; all attendees share the slot.',
+				array(
+					'type'       => 'object',
+					'properties' => array(
+						'service_id'     => array( 'type' => 'string', 'description' => 'Group service id from list_services.' ),
+						'group_id'       => array( 'type' => 'string', 'description' => 'Group id for the collective booking.' ),
+						'date'           => array( 'type' => 'string', 'description' => 'Date YYYY-MM-DD.' ),
+						'time'           => array( 'type' => 'string', 'description' => 'Start time HH:mm (24h).' ),
+						'customer_name'  => array( 'type' => 'string', 'description' => 'Customer full name.' ),
+						'customer_email' => array( 'type' => 'string', 'format' => 'email', 'description' => 'Customer email.' ),
+						'customer_phone' => array( 'type' => 'string', 'description' => 'Optional customer phone.' ),
+						'notes'          => array( 'type' => 'string', 'description' => 'Optional notes.' ),
+					),
+					'required'   => array( 'service_id', 'group_id', 'date', 'time', 'customer_name', 'customer_email' ),
+				),
+				'tool_book_group',
+			),
+			'get_reports'            => array(
+				'Summarise bookings and revenue over a date range (paid: reports). Returns totals, counts per status, and revenue by service.',
+				array(
+					'type'       => 'object',
+					'properties' => array(
+						'from_date' => array( 'type' => 'string', 'description' => 'Range start YYYY-MM-DD.' ),
+						'to_date'   => array( 'type' => 'string', 'description' => 'Range end YYYY-MM-DD.' ),
+					),
+					'required'   => array( 'from_date', 'to_date' ),
+				),
+				'tool_get_reports',
+			),
 		);
 	}
 

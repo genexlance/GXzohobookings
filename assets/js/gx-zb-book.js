@@ -42,6 +42,18 @@
       }
       xhr.send(params);
     }
+    function updateFields(){
+      var slot=document.getElementById('gx-zb-custom-fields-slot');
+      if(!slot||!serviceSelect) return;
+      var sidx=serviceSelect.selectedIndex;
+      var serviceId=serviceSelect.options[sidx]?serviceSelect.options[sidx].value:'';
+      // A server-rendered field set (preselected service) already exists — leave it.
+      if(document.querySelector('.gx-zb-custom-fields')){ return; }
+      if(!serviceId){ slot.innerHTML=''; return; }
+      ajaxPost('gx_zb_fields',{service_id:serviceId},function(err,data){
+        slot.innerHTML=(!err&&data&&data.html)?data.html:'';
+      });
+    }
     function updateStaff(){
       var idx=serviceSelect.selectedIndex;
       var opt=serviceSelect.options[idx];
@@ -118,6 +130,7 @@
     if(serviceSelect){
       serviceSelect.addEventListener('change',function(){
         updateStaff();
+        updateFields();
         updateSlots();
       });
     }
@@ -133,6 +146,7 @@
     }
     if(serviceSelect&&serviceSelect.options.length>1){
       updateStaff();
+      updateFields();
     }
   });
 })();

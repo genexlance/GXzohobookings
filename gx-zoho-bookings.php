@@ -3,7 +3,7 @@
  * Plugin Name:       GX Zoho Bookings
  * Plugin URI:        https://genexmarketing.com/plugins/gx-zoho-bookings/
  * Description:       Connect Zoho Bookings to WordPress. Embed your booking page or connect via OAuth to display services and manage appointments — dashboard, booking creation, reschedule and status updates — right inside wp-admin. Free-plan friendly.
- * Version:           1.9.0
+ * Version:           2.0.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Genex Marketing Agency Ltd
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'GX_ZB_VERSION', '1.9.0' );
+define( 'GX_ZB_VERSION', '2.0.0' );
 define( 'GX_ZB_FILE', __FILE__ );
 define( 'GX_ZB_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GX_ZB_URL', plugin_dir_url( __FILE__ ) );
@@ -33,6 +33,8 @@ require_once GX_ZB_DIR . 'includes/class-gx-zb-admin.php';
 require_once GX_ZB_DIR . 'includes/class-gx-zb-shortcodes.php';
 require_once GX_ZB_DIR . 'includes/class-gx-zb-blocks.php';
 require_once GX_ZB_DIR . 'includes/class-gx-zb-stripe.php';
+require_once GX_ZB_DIR . 'includes/class-gx-zb-fields.php';
+require_once GX_ZB_DIR . 'includes/class-gx-zb-crm.php';
 require_once GX_ZB_DIR . 'includes/class-gx-zb-staff-meta.php';
 require_once GX_ZB_DIR . 'includes/class-gx-zb-calendar.php';
 require_once GX_ZB_DIR . 'includes/class-gx-zb-payments.php';
@@ -48,6 +50,8 @@ if ( is_admin() ) {
 	require_once GX_ZB_DIR . 'includes/admin/class-gx-zb-booking-form.php';
 	require_once GX_ZB_DIR . 'includes/admin/class-gx-zb-services-admin.php';
 	require_once GX_ZB_DIR . 'includes/admin/class-gx-zb-staff-admin.php';
+	require_once GX_ZB_DIR . 'includes/admin/class-gx-zb-reports.php';
+	require_once GX_ZB_DIR . 'includes/admin/class-gx-zb-fields-admin.php';
 }
 
 require_once GX_ZB_DIR . 'includes/class-gx-zb-plugin.php';

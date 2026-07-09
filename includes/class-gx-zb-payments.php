@@ -58,6 +58,8 @@ final class GX_ZB_Payments {
 		add_action( 'wp_ajax_nopriv_gx_zb_staff', array( $this, 'ajax_staff' ) );
 		add_action( 'wp_ajax_gx_zb_slots', array( $this, 'ajax_slots' ) );
 		add_action( 'wp_ajax_nopriv_gx_zb_slots', array( $this, 'ajax_slots' ) );
+		add_action( 'wp_ajax_gx_zb_fields', array( $this, 'ajax_fields' ) );
+		add_action( 'wp_ajax_nopriv_gx_zb_fields', array( $this, 'ajax_fields' ) );
 		add_action( 'admin_post_gx_zb_book_submit', array( $this, 'handle_submit' ) );
 		add_action( 'admin_post_nopriv_gx_zb_book_submit', array( $this, 'handle_submit' ) );
 		add_action( 'template_redirect', array( $this, 'handle_return' ) );
@@ -245,6 +247,14 @@ final class GX_ZB_Payments {
 			$output .= '</div>';
 		}
 
+		// Custom fields (paid: additional_fields). Rendered for a preselected
+		// service — the primary paid flow is a landing page bound to one service.
+		// The dropdown flow fills #gx-zb-custom-fields-slot via AJAX (gx_zb_fields).
+		if ( '' !== $preselect && class_exists( 'GX_ZB_Fields' ) ) {
+			$output .= GX_ZB_Fields::instance()->render_inputs( $preselect );
+		}
+		$output .= '<div id="gx-zb-custom-fields-slot"></div>';
+
 		// Payment note (populated by JS from the selected service).
 		$output .= '<div class="gx-zb-pay-note" id="gx-zb-pay-note" style="display:none;"></div>';
 
@@ -252,6 +262,21 @@ final class GX_ZB_Payments {
 		$output .= '</form>';
 
 		return $output;
+	}
+
+	/**
+	 * AJAX handler: custom-field inputs HTML for a service (paid).
+	 *
+	 * @since 2.0.0
+	 */
+	public function ajax_fields() {
+		check_ajax_referer( 'gx_zb_book' );
+
+		$service_id = isset( $_POST['service_id'] ) ? sanitize_text_field( wp_unslash( $_POST['service_id'] ) ) : '';
+		if ( '' === $service_id || ! class_exists( 'GX_ZB_Fields' ) ) {
+			wp_send_json_success( array( 'html' => '' ) );
+		}
+		wp_send_json_success( array( 'html' => GX_ZB_Fields::instance()->render_inputs( $service_id ) ) );
 	}
 
 	/**
@@ -376,6 +401,18 @@ final class GX_ZB_Payments {
 		if ( $phone_req && empty( $phone ) ) {
 			$errors[] = __( 'Phone is required.', 'gx-zoho-bookings' );
 		}
+
+		// Custom fields (paid: additional_fields). Collected + validated site-side.
+		$custom_fields = array();
+		if ( '' !== $service_id && class_exists( 'GX_ZB_Fields' ) ) {
+			$cf_source = isset( $_POST['gx_zb_cf'] ) && is_array( $_POST['gx_zb_cf'] ) ? wp_unslash( $_POST['gx_zb_cf'] ) : array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- sanitized inside collect().
+			$collected = GX_ZB_Fields::instance()->collect( $service_id, $cf_source );
+			$custom_fields = $collected['values'];
+			if ( ! empty( $collected['errors'] ) ) {
+				$errors = array_merge( $errors, $collected['errors'] );
+			}
+		}
+
 		if ( ! empty( $errors ) ) {
 			$this->redirect_with_result( $return_url, 'error', implode( ' ', $errors ) );
 		}
@@ -434,6 +471,9 @@ final class GX_ZB_Payments {
 			'timezone'         => wp_timezone_string(),
 			'customer_details' => $customer_details,
 		);
+		if ( ! empty( $custom_fields ) ) {
+			$appt_args['additional_fields'] = $custom_fields;
+		}
 
 		$stripe           = GX_ZB_Stripe::instance();
 		$is_paid_booking  = ( $cost > 0 && $stripe->is_enabled() );
@@ -460,10 +500,25 @@ final class GX_ZB_Payments {
 			'video_url'    => $video_url,
 		);
 
+		// CRM sync payload (paid: pushed to Zoho CRM after a confirmed booking).
+		$crm_booking = array(
+			'name'         => $name,
+			'email'        => $email,
+			'phone'        => $phone,
+			'service_name' => $service_name,
+			'staff_name'   => '',
+			'start_time'   => $from_time,
+			'end_time'     => '',
+			'timezone'     => wp_timezone_string(),
+			'cost'         => $cost,
+			'notes'        => $notes,
+		);
+
 		if ( ! $is_paid_booking ) {
 			// Free path — book immediately.
 			$result = GX_ZB_API_Client::instance()->create_appointment( $appt_args );
 			if ( $result && ! is_wp_error( $result ) ) {
+				$this->push_to_crm( $crm_booking );
 				$this->redirect_with_result( $return_url, 'success', __( 'Booking confirmed!', 'gx-zoho-bookings' ), $event );
 			} else {
 				$error_msg = is_wp_error( $result ) ? $result->get_error_message() : __( 'Booking failed.', 'gx-zoho-bookings' );
@@ -481,6 +536,7 @@ final class GX_ZB_Payments {
 			'currency'   => $stripe->currency(),
 			'return_url' => $return_url,
 			'event'      => $event,
+			'crm'        => $crm_booking,
 		);
 		set_transient( $transient_key, $pending_data, 15 * MINUTE_IN_SECONDS );
 
@@ -558,6 +614,9 @@ final class GX_ZB_Payments {
 				delete_transient( $transient_key );
 
 				if ( $result && ! is_wp_error( $result ) ) {
+					if ( isset( $pending['crm'] ) && is_array( $pending['crm'] ) ) {
+						$this->push_to_crm( $pending['crm'] );
+					}
 					$message = sprintf(
 						/* translators: 1: currency, 2: amount */
 						__( 'Booking confirmed! Amount paid: %1$s %2$.2f', 'gx-zoho-bookings' ),
@@ -581,6 +640,30 @@ final class GX_ZB_Payments {
 				delete_transient( 'gx_zb_pending_' . $token );
 			}
 			$this->redirect_with_result( $fallback_url, 'cancel', __( 'Payment cancelled, not booked.', 'gx-zoho-bookings' ) );
+		}
+	}
+
+	/**
+	 * Push a confirmed booking to Zoho CRM, if CRM sync is enabled.
+	 *
+	 * Best-effort: CRM failures never block or reverse a confirmed booking —
+	 * they are logged and swallowed so the customer still sees success.
+	 *
+	 * @since 2.0.0
+	 * @param array $booking Booking payload for GX_ZB_CRM::sync_booking().
+	 * @return void
+	 */
+	private function push_to_crm( array $booking ) {
+		if ( ! class_exists( 'GX_ZB_CRM' ) ) {
+			return;
+		}
+		$crm = GX_ZB_CRM::instance();
+		if ( ! $crm->is_enabled() ) {
+			return;
+		}
+		$result = $crm->sync_booking( $booking );
+		if ( is_wp_error( $result ) ) {
+			error_log( 'GX_ZB_CRM sync failed: ' . $result->get_error_message() );
 		}
 	}
 

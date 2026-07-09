@@ -58,6 +58,10 @@ final class GX_ZB_API_Client {
 	 */
 	public function get_services( $workspace_id = '' ) {
 		$params = array();
+		// Fall back to the admin-selected active workspace (multi-workspace, paid).
+		if ( empty( $workspace_id ) ) {
+			$workspace_id = GX_ZB_Settings::instance()->get( 'active_workspace_id' );
+		}
 		if ( ! empty( $workspace_id ) ) {
 			$params['workspace_id'] = sanitize_text_field( $workspace_id );
 		}
@@ -110,13 +114,18 @@ final class GX_ZB_API_Client {
 	}
 
 	/**
-	 * Retrieve available resources.
+	 * Retrieve available resources (paid: resource booking).
 	 *
+	 * @since 1.0.0
+	 * @param string $service_id Optional. Filter resources by service.
 	 * @return array|WP_Error Array of resource data on success, WP_Error on failure.
 	 */
-	public function get_resources() {
-		$response = $this->request( 'GET', 'resources' );
-		return $response;
+	public function get_resources( $service_id = '' ) {
+		$params = array();
+		if ( ! empty( $service_id ) ) {
+			$params['service_id'] = sanitize_text_field( $service_id );
+		}
+		return $this->request( 'GET', 'resources', $params );
 	}
 
 	/**
@@ -157,6 +166,10 @@ final class GX_ZB_API_Client {
 	 *     @type string $timezone        Optional. Timezone string. Defaults to wp_timezone_string().
 	 *     @type array  $customer_details Associative array with keys 'name', 'email', 'phone_number'.
 	 *     @type string $notes           Optional. Additional notes.
+	 *     @type string $resource_id     Optional. Resource booking: use instead of staff_id (paid).
+	 *     @type string $group_id        Optional. Group/collective booking: use instead of staff_id (paid).
+	 *     @type string $to_time         Optional. End time 'dd-MMM-yyyy HH:mm:ss'. REQUIRED for resource bookings.
+	 *     @type array  $additional_fields Optional. Custom-field values keyed by field name (paid).
 	 * }
 	 * @return array|WP_Error Appointment data array on success, WP_Error on failure.
 	 */
@@ -166,11 +179,34 @@ final class GX_ZB_API_Client {
 
 		$params = array(
 			'service_id'       => $args['service_id'],
-			'staff_id'         => $args['staff_id'],
 			'from_time'        => $args['from_time'],
 			'timezone'         => $timezone,
 			'customer_details' => $customer_json,
 		);
+
+		// Exactly one booking subject: staff (default), resource, or group.
+		if ( ! empty( $args['group_id'] ) ) {
+			$params['group_id'] = sanitize_text_field( $args['group_id'] );
+		} elseif ( ! empty( $args['resource_id'] ) ) {
+			$params['resource_id'] = sanitize_text_field( $args['resource_id'] );
+			// Resource bookings require an explicit end time.
+			if ( empty( $args['to_time'] ) ) {
+				return new WP_Error( 'gx_zb_validation_error', __( 'Resource bookings require an end time (to_time).', 'gx-zoho-bookings' ) );
+			}
+		} elseif ( ! empty( $args['staff_id'] ) ) {
+			$params['staff_id'] = sanitize_text_field( $args['staff_id'] );
+		} else {
+			return new WP_Error( 'gx_zb_validation_error', __( 'A staff member, resource, or group is required to book.', 'gx-zoho-bookings' ) );
+		}
+
+		if ( ! empty( $args['to_time'] ) ) {
+			$params['to_time'] = sanitize_text_field( $args['to_time'] );
+		}
+
+		// Custom fields (paid) travel as a JSON string in a form field, like customer_details.
+		if ( ! empty( $args['additional_fields'] ) && is_array( $args['additional_fields'] ) ) {
+			$params['additional_fields'] = wp_json_encode( $args['additional_fields'] );
+		}
 
 		if ( ! empty( $args['notes'] ) ) {
 			$params['notes'] = $args['notes'];

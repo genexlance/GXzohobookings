@@ -55,6 +55,8 @@ final class GX_ZB_Settings {
 			'stripe_sk'        => '',
 			'stripe_currency'  => 'usd',
 			'services_css'     => '',
+			'crm_enabled'        => false,
+			'active_workspace_id' => '',
 		);
 	}
 
@@ -148,6 +150,15 @@ final class GX_ZB_Settings {
 
 		// Custom services-block CSS: strip any markup, keep the stylesheet text.
 		$clean['services_css'] = isset( $raw['services_css'] ) ? trim( wp_strip_all_tags( (string) $raw['services_css'] ) ) : $current['services_css'];
+
+		// Zoho CRM sync (paid). Toggling on requires the CRM OAuth scope, so the
+		// admin must reconnect after enabling — surfaced by the settings UI.
+		$clean['crm_enabled'] = ! empty( $raw['crm_enabled'] );
+
+		// Active workspace for multi-workspace (paid) accounts. Empty = default.
+		$clean['active_workspace_id'] = isset( $raw['active_workspace_id'] )
+			? sanitize_text_field( $raw['active_workspace_id'] )
+			: $current['active_workspace_id'];
 
 		return $clean;
 	}

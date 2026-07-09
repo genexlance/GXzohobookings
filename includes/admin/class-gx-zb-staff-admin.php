@@ -180,7 +180,7 @@ final class GX_ZB_Staff_Admin {
 			?>
 
 			<h2><?php esc_html_e( 'Add New Staff', 'gx-zoho-bookings' ); ?></h2>
-			<p><em><?php esc_html_e( 'Note: The free plan allows only one staff member. API errors will be shown if the limit is exceeded.', 'gx-zoho-bookings' ); ?></em></p>
+			<p><em><?php esc_html_e( 'Add as many staff as your Zoho Bookings plan allows (the free plan permits one). If you exceed your plan limit, Zoho returns an error shown above.', 'gx-zoho-bookings' ); ?></em></p>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" class="gx-zb-booking-form">
 				<?php wp_nonce_field( 'gx_zb_staff_add', 'gx_zb_staff_nonce' ); ?>

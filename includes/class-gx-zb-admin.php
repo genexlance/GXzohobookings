@@ -205,6 +205,30 @@ final class GX_ZB_Admin {
 			'gx-zoho-bookings',
 			'gx_zb_services_block_section'
 		);
+
+		// Paid-plan features: multi-workspace + Zoho CRM sync.
+		add_settings_section(
+			'gx_zb_paid_section',
+			esc_html__( 'Paid-plan features', 'gx-zoho-bookings' ),
+			array( $this, 'paid_section_intro' ),
+			'gx-zoho-bookings'
+		);
+
+		add_settings_field(
+			'gx_zb_active_workspace_id',
+			esc_html__( 'Active workspace', 'gx-zoho-bookings' ),
+			array( $this, 'field_active_workspace' ),
+			'gx-zoho-bookings',
+			'gx_zb_paid_section'
+		);
+
+		add_settings_field(
+			'gx_zb_crm_enabled',
+			esc_html__( 'Zoho CRM sync', 'gx-zoho-bookings' ),
+			array( $this, 'field_crm_enabled' ),
+			'gx-zoho-bookings',
+			'gx_zb_paid_section'
+		);
 	}
 
 	/**
@@ -222,6 +246,73 @@ final class GX_ZB_Admin {
 		?>
 		<textarea name="<?php echo esc_attr( GX_ZB_OPTION_SETTINGS ); ?>[services_css]" rows="12" class="large-text code" placeholder=".gx-zb-service-card { border-radius: 16px; }"><?php echo esc_textarea( $value ); ?></textarea>
 		<p class="description"><?php esc_html_e( 'Useful selectors: .gx-zb-services, .gx-zb-service-card, .gx-zb-service-price, .gx-zb-service-free, .gx-zb-service-book, .gx-zb-service-pay, .gx-zb-service-duration, .gx-zb-service-description.', 'gx-zoho-bookings' ); ?></p>
+		<?php
+	}
+
+	/**
+	 * Intro text for the paid-plan features section.
+	 */
+	public function paid_section_intro(): void {
+		echo '<p>' . esc_html__( 'These features require a paid Zoho Bookings plan. Multi-workspace lets you point this site at one of several workspaces; CRM sync pushes each confirmed booking into Zoho CRM.', 'gx-zoho-bookings' ) . '</p>';
+	}
+
+	/**
+	 * Active-workspace selector (multi-workspace, paid).
+	 */
+	public function field_active_workspace(): void {
+		$current = (string) GX_ZB_Settings::instance()->get( 'active_workspace_id' );
+		$name    = esc_attr( GX_ZB_OPTION_SETTINGS ) . '[active_workspace_id]';
+
+		if ( ! GX_ZB_OAuth::instance()->is_connected() ) {
+			echo '<p class="description">' . esc_html__( 'Connect to Zoho first to choose a workspace.', 'gx-zoho-bookings' ) . '</p>';
+			printf( '<input type="hidden" name="%s" value="%s">', esc_attr( $name ), esc_attr( $current ) );
+			return;
+		}
+
+		$workspaces = GX_ZB_API_Client::instance()->get_workspaces();
+		if ( is_wp_error( $workspaces ) || ! is_array( $workspaces ) ) {
+			echo '<p class="description">' . esc_html__( 'Could not load workspaces. Using the default workspace.', 'gx-zoho-bookings' ) . '</p>';
+			printf( '<input type="hidden" name="%s" value="%s">', esc_attr( $name ), esc_attr( $current ) );
+			return;
+		}
+
+		echo '<select name="' . esc_attr( $name ) . '">';
+		echo '<option value="">' . esc_html__( 'Default workspace', 'gx-zoho-bookings' ) . '</option>';
+		foreach ( $workspaces as $ws ) {
+			if ( ! is_array( $ws ) ) {
+				continue;
+			}
+			$id    = isset( $ws['id'] ) ? (string) $ws['id'] : ( isset( $ws['workspace_id'] ) ? (string) $ws['workspace_id'] : '' );
+			$label = isset( $ws['name'] ) ? (string) $ws['name'] : $id;
+			if ( '' === $id ) {
+				continue;
+			}
+			printf(
+				'<option value="%s"%s>%s</option>',
+				esc_attr( $id ),
+				selected( $current, $id, false ),
+				esc_html( $label )
+			);
+		}
+		echo '</select>';
+		echo '<p class="description">' . esc_html__( 'Services, staff and appointments are read from this workspace.', 'gx-zoho-bookings' ) . '</p>';
+	}
+
+	/**
+	 * Zoho CRM sync enable checkbox. Enabling requires reconnecting so the
+	 * extra OAuth scope is granted.
+	 */
+	public function field_crm_enabled(): void {
+		$enabled = (bool) GX_ZB_Settings::instance()->get( 'crm_enabled' );
+		?>
+		<label>
+			<input type="checkbox" name="<?php echo esc_attr( GX_ZB_OPTION_SETTINGS ); ?>[crm_enabled]" value="1" <?php checked( $enabled ); ?>>
+			<?php esc_html_e( 'Push each confirmed booking to Zoho CRM (creates/updates a Contact and logs a meeting)', 'gx-zoho-bookings' ); ?>
+		</label>
+		<p class="description">
+			<strong><?php esc_html_e( 'Important:', 'gx-zoho-bookings' ); ?></strong>
+			<?php esc_html_e( 'After enabling this, reconnect to Zoho (disconnect then Connect again) so the CRM permission is granted. Until you do, CRM sync will fail silently.', 'gx-zoho-bookings' ); ?>
+		</p>
 		<?php
 	}
 

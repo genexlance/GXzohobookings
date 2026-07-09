@@ -107,6 +107,16 @@ final class GX_ZB_Manage {
 			array( GX_ZB_Staff_Admin::instance(), 'render_page' )
 		);
 
+		// Reports — revenue & bookings dashboard (paid features).
+		add_submenu_page(
+			'gx-zb-dashboard',
+			__( 'Reports', 'gx-zoho-bookings' ),
+			__( 'Reports', 'gx-zoho-bookings' ),
+			'manage_options',
+			'gx-zb-reports',
+			array( GX_ZB_Reports::instance(), 'render_page' )
+		);
+
 		// Settings — link straight to the existing settings page. Its URL is
 		// the OAuth redirect URI, so it must not move.
 		add_submenu_page(

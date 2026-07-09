@@ -24,3 +24,6 @@ delete_option( 'gx_zb_transient_keys' );
 delete_option( 'gx_zb_service_pages' );
 delete_option( 'gx_zb_staff_meta' );
 delete_option( 'gx_zb_staff_hidden' );
+
+// Per-service custom field definitions (v2.0.0).
+delete_option( 'gx_zb_service_fields' );

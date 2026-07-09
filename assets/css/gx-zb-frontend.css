@@ -292,3 +292,11 @@
 .gx-zb-conf-video {
     margin: 10px 0 0;
 }
+
+/* Custom booking fields (paid: additional_fields) */
+.gx-zb-custom-fields{margin:1rem 0;display:flex;flex-direction:column;gap:.75rem}
+.gx-zb-custom-fields .gx-zb-field{display:flex;flex-direction:column;gap:.25rem;margin:0}
+.gx-zb-custom-fields label{font-weight:600}
+.gx-zb-custom-fields input[type=text],.gx-zb-custom-fields textarea,.gx-zb-custom-fields select{width:100%;padding:.5rem;border:1px solid #ccc;border-radius:4px}
+.gx-zb-custom-fields .gx-zb-field-checkbox label{font-weight:400;display:flex;align-items:center;gap:.5rem}
+.gx-zb-required{color:#c00}

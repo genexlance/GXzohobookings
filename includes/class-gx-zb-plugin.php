@@ -51,6 +51,7 @@ final class GX_ZB_Plugin {
 			GX_ZB_Booking_Form::instance()->register_hooks();
 			GX_ZB_Services_Admin::instance()->register_hooks();
 			GX_ZB_Staff_Admin::instance()->register_hooks();
+			GX_ZB_Fields_Admin::instance()->register_hooks();
 			add_action( 'admin_init', array( GX_ZB_OAuth::instance(), 'handle_callback' ) );
 		}
 

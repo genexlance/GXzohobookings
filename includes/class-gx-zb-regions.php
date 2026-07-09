@@ -84,6 +84,19 @@ final class GX_ZB_Regions {
 	}
 
 	/**
+	 * Zoho CRM v6 REST base URL for a region.
+	 *
+	 * CRM shares the region's zohoapis domain; only the path differs.
+	 *
+	 * @since 2.0.0
+	 * @param string $region Region slug.
+	 * @return string Base URL ending in a slash, e.g. https://www.zohoapis.com/crm/v6/.
+	 */
+	public static function crm_base( $region ) {
+		return trailingslashit( self::api_base( $region ) ) . 'crm/v6/';
+	}
+
+	/**
 	 * Region choices for the settings select field.
 	 *
 	 * @return array<string,string> slug => label.
