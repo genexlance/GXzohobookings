@@ -60,6 +60,8 @@ final class GX_ZB_Payments {
 		add_action( 'wp_ajax_nopriv_gx_zb_slots', array( $this, 'ajax_slots' ) );
 		add_action( 'wp_ajax_gx_zb_fields', array( $this, 'ajax_fields' ) );
 		add_action( 'wp_ajax_nopriv_gx_zb_fields', array( $this, 'ajax_fields' ) );
+		add_action( 'wp_ajax_gx_zb_resources', array( $this, 'ajax_resources' ) );
+		add_action( 'wp_ajax_nopriv_gx_zb_resources', array( $this, 'ajax_resources' ) );
 		add_action( 'admin_post_gx_zb_book_submit', array( $this, 'handle_submit' ) );
 		add_action( 'admin_post_nopriv_gx_zb_book_submit', array( $this, 'handle_submit' ) );
 		add_action( 'template_redirect', array( $this, 'handle_return' ) );
@@ -179,10 +181,12 @@ final class GX_ZB_Payments {
 				$sid   = isset( $service['id'] ) ? (string) $service['id'] : ( isset( $service['service_id'] ) ? (string) $service['service_id'] : '' );
 				$sname = isset( $service['name'] ) ? (string) $service['name'] : '';
 				$scost = isset( $service['cost'] ) ? floatval( $service['cost'] ) : 0;
+				$stype = isset( $service['service_type'] ) ? (string) $service['service_type'] : 'one_on_one';
+				$sdur  = isset( $service['duration'] ) ? (int) $service['duration'] : 30;
 				if ( '' === $sid ) {
 					continue;
 				}
-				$output .= '<option value="' . esc_attr( $sid ) . '" data-cost="' . esc_attr( $scost ) . '"' . selected( $sid, $preselect, false ) . '>';
+				$output .= '<option value="' . esc_attr( $sid ) . '" data-cost="' . esc_attr( $scost ) . '" data-service-type="' . esc_attr( $stype ) . '" data-duration="' . esc_attr( $sdur ) . '"' . selected( $sid, $preselect, false ) . '>';
 				$output .= esc_html( $sname );
 				if ( $scost > 0 ) {
 					$output .= ' (' . esc_html( strtoupper( GX_ZB_Stripe::instance()->currency() ) . ' ' . number_format_i18n( $scost, 2 ) ) . ')';
@@ -193,10 +197,19 @@ final class GX_ZB_Payments {
 		$output .= '</select>';
 		$output .= '</div>';
 
-		// Staff select (populated by JS).
-		$output .= '<div class="gx-zb-field">';
+		// Staff select (populated by JS; hidden for resource-type services).
+		$output .= '<div class="gx-zb-field" id="gx-zb-staff-field">';
 		$output .= '<label for="gx-zb-book-staff">' . esc_html__( 'Staff', 'gx-zoho-bookings' ) . '</label>';
 		$output .= '<select id="gx-zb-book-staff" name="staff_id" required disabled>';
+		$output .= '<option value="">' . esc_html__( 'Select a service first', 'gx-zoho-bookings' ) . '</option>';
+		$output .= '</select>';
+		$output .= '</div>';
+
+		// Resource select (paid: resource booking). Hidden until a resource-type
+		// service is chosen; JS fills it via the gx_zb_resources AJAX action.
+		$output .= '<div class="gx-zb-field" id="gx-zb-resource-field" style="display:none;">';
+		$output .= '<label for="gx-zb-book-resource">' . esc_html__( 'Resource', 'gx-zoho-bookings' ) . '</label>';
+		$output .= '<select id="gx-zb-book-resource" name="resource_id" disabled>';
 		$output .= '<option value="">' . esc_html__( 'Select a service first', 'gx-zoho-bookings' ) . '</option>';
 		$output .= '</select>';
 		$output .= '</div>';
@@ -207,13 +220,19 @@ final class GX_ZB_Payments {
 		$output .= '<input type="date" id="gx-zb-book-date" name="date" required>';
 		$output .= '</div>';
 
-		// Slots container.
+		// Slots container (staff services).
 		$output .= '<div class="gx-zb-slots" id="gx-zb-book-slots">';
 		$output .= '<p>' . esc_html__( 'Select a staff and date to see available slots', 'gx-zoho-bookings' ) . '</p>';
 		$output .= '</div>';
 
 		// Hidden slot input.
 		$output .= '<input type="hidden" id="gx-zb-book-slot" name="slot" value="">';
+
+		// Start-time input (resource services book a start time + duration range).
+		$output .= '<div class="gx-zb-field" id="gx-zb-resource-time-field" style="display:none;">';
+		$output .= '<label for="gx-zb-book-time">' . esc_html__( 'Start time', 'gx-zoho-bookings' ) . '</label>';
+		$output .= '<input type="time" id="gx-zb-book-time" name="resource_time" value="">';
+		$output .= '</div>';
 
 		// Customer details.
 		$output .= '<div class="gx-zb-field">';
@@ -277,6 +296,37 @@ final class GX_ZB_Payments {
 			wp_send_json_success( array( 'html' => '' ) );
 		}
 		wp_send_json_success( array( 'html' => GX_ZB_Fields::instance()->render_inputs( $service_id ) ) );
+	}
+
+	/**
+	 * AJAX handler: bookable resources for a service (paid: resource booking).
+	 *
+	 * @since 2.0.0
+	 */
+	public function ajax_resources() {
+		check_ajax_referer( 'gx_zb_book' );
+
+		$service_id = isset( $_POST['service_id'] ) ? sanitize_text_field( wp_unslash( $_POST['service_id'] ) ) : '';
+		$resources  = GX_ZB_API_Client::instance()->get_resources( $service_id );
+		if ( is_wp_error( $resources ) ) {
+			wp_send_json_error( $resources->get_error_message() );
+		}
+
+		$out = array();
+		foreach ( (array) $resources as $res ) {
+			if ( ! is_array( $res ) ) {
+				continue;
+			}
+			$rid = isset( $res['id'] ) ? (string) $res['id'] : '';
+			if ( '' === $rid ) {
+				continue;
+			}
+			$out[] = array(
+				'id'   => $rid,
+				'name' => isset( $res['name'] ) ? sanitize_text_field( $res['name'] ) : $rid,
+			);
+		}
+		wp_send_json_success( $out );
 	}
 
 	/**
@@ -362,8 +412,11 @@ final class GX_ZB_Payments {
 		}
 
 		// Sanitize inputs. Service/staff ids are opaque strings, never integers.
-		$service_id = isset( $_POST['service_id'] ) ? sanitize_text_field( wp_unslash( $_POST['service_id'] ) ) : '';
-		$staff_id   = isset( $_POST['staff_id'] ) ? sanitize_text_field( wp_unslash( $_POST['staff_id'] ) ) : '';
+		$service_id   = isset( $_POST['service_id'] ) ? sanitize_text_field( wp_unslash( $_POST['service_id'] ) ) : '';
+		$staff_id     = isset( $_POST['staff_id'] ) ? sanitize_text_field( wp_unslash( $_POST['staff_id'] ) ) : '';
+		$resource_id  = isset( $_POST['resource_id'] ) ? sanitize_text_field( wp_unslash( $_POST['resource_id'] ) ) : '';
+		$res_time     = isset( $_POST['resource_time'] ) ? sanitize_text_field( wp_unslash( $_POST['resource_time'] ) ) : '';
+		$is_resource  = ( '' !== $resource_id );
 		$date       = sanitize_text_field( wp_unslash( $_POST['date'] ?? '' ) );
 		$slot       = sanitize_text_field( wp_unslash( $_POST['slot'] ?? '' ) );
 		$name       = sanitize_text_field( wp_unslash( $_POST['name'] ?? '' ) );
@@ -383,14 +436,21 @@ final class GX_ZB_Payments {
 		if ( '' === $service_id ) {
 			$errors[] = __( 'Service is required.', 'gx-zoho-bookings' );
 		}
-		if ( '' === $staff_id ) {
-			$errors[] = __( 'Staff is required.', 'gx-zoho-bookings' );
-		}
 		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
 			$errors[] = __( 'A valid date is required.', 'gx-zoho-bookings' );
 		}
-		if ( empty( $slot ) ) {
-			$errors[] = __( 'Time slot is required.', 'gx-zoho-bookings' );
+		if ( $is_resource ) {
+			// Resource booking: a resource + start time replace staff + slot.
+			if ( ! preg_match( '/^\d{2}:\d{2}$/', $res_time ) ) {
+				$errors[] = __( 'A valid start time is required.', 'gx-zoho-bookings' );
+			}
+		} else {
+			if ( '' === $staff_id ) {
+				$errors[] = __( 'Staff is required.', 'gx-zoho-bookings' );
+			}
+			if ( empty( $slot ) ) {
+				$errors[] = __( 'Time slot is required.', 'gx-zoho-bookings' );
+			}
 		}
 		if ( empty( $name ) ) {
 			$errors[] = __( 'Name is required.', 'gx-zoho-bookings' );
@@ -441,16 +501,27 @@ final class GX_ZB_Payments {
 		}
 
 		// Staff removed on this site cannot be booked, even by a forged POST.
-		if ( class_exists( 'GX_ZB_Staff_Meta' ) && GX_ZB_Staff_Meta::is_hidden( $staff_id ) ) {
+		if ( ! $is_resource && class_exists( 'GX_ZB_Staff_Meta' ) && GX_ZB_Staff_Meta::is_hidden( $staff_id ) ) {
 			$this->redirect_with_result( $return_url, 'error', __( 'Invalid staff selected.', 'gx-zoho-bookings' ) );
 		}
 
 		// Build the exact payload the API client expects: from_time in Zoho
 		// datetime format + customer_details. Combine the Y-m-d date with the
-		// slot ("10:00 AM" or "14:30").
-		$from_time = $this->build_from_time( $date, $slot );
+		// slot ("10:00 AM" or "14:30") — or the start time for resource bookings.
+		$from_time = $this->build_from_time( $date, $is_resource ? $res_time : $slot );
 		if ( '' === $from_time ) {
 			$this->redirect_with_result( $return_url, 'error', __( 'Invalid time slot.', 'gx-zoho-bookings' ) );
+		}
+
+		// Resource bookings require an end time = start + service duration.
+		$to_time = '';
+		if ( $is_resource ) {
+			$start_dt = DateTime::createFromFormat( 'd-M-Y H:i:s', $from_time );
+			if ( ! $start_dt ) {
+				$this->redirect_with_result( $return_url, 'error', __( 'Invalid start time.', 'gx-zoho-bookings' ) );
+			}
+			$start_dt->modify( '+' . max( 1, $service_duration ) . ' minutes' );
+			$to_time = $start_dt->format( 'd-M-Y H:i:s' );
 		}
 
 		$customer_details = array(
@@ -466,11 +537,16 @@ final class GX_ZB_Payments {
 
 		$appt_args = array(
 			'service_id'       => $service_id,
-			'staff_id'         => $staff_id,
 			'from_time'        => $from_time,
 			'timezone'         => wp_timezone_string(),
 			'customer_details' => $customer_details,
 		);
+		if ( $is_resource ) {
+			$appt_args['resource_id'] = $resource_id;
+			$appt_args['to_time']     = $to_time;
+		} else {
+			$appt_args['staff_id'] = $staff_id;
+		}
 		if ( ! empty( $custom_fields ) ) {
 			$appt_args['additional_fields'] = $custom_fields;
 		}
@@ -480,8 +556,8 @@ final class GX_ZB_Payments {
 
 		// Calendar-link event details, carried through to the confirmation panel.
 		// A staff member's video-conference link becomes the event location so
-		// it lands in the attendee's calendar entry.
-		$video_url = class_exists( 'GX_ZB_Staff_Meta' ) ? GX_ZB_Staff_Meta::video_url( $staff_id ) : '';
+		// it lands in the attendee's calendar entry. Resource bookings have no staff.
+		$video_url = ( ! $is_resource && class_exists( 'GX_ZB_Staff_Meta' ) ) ? GX_ZB_Staff_Meta::video_url( $staff_id ) : '';
 
 		/* translators: %s: site name */
 		$description = sprintf( __( 'Appointment booked at %s', 'gx-zoho-bookings' ), wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ) );
@@ -508,7 +584,7 @@ final class GX_ZB_Payments {
 			'service_name' => $service_name,
 			'staff_name'   => '',
 			'start_time'   => $from_time,
-			'end_time'     => '',
+			'end_time'     => $to_time,
 			'timezone'     => wp_timezone_string(),
 			'cost'         => $cost,
 			'notes'        => $notes,
