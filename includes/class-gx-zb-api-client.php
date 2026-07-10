@@ -84,20 +84,34 @@ final class GX_ZB_API_Client {
 	}
 
 	/**
-	 * Retrieve available time slots for a service/staff/date combination.
+	 * Retrieve available time slots for a service/subject/date combination.
+	 *
+	 * The "subject" is a staff member by default; paid plans may pass a
+	 * resource or group id instead (Zoho's availableslots accepts exactly one
+	 * of staff_id / resource_id / group_id).
 	 *
 	 * @since 1.0.0
-	 * @param string $service_id Service ID.
-	 * @param string $staff_id   Staff ID.
-	 * @param string $date       Date in dd-MMM-yyyy format (e.g. 12-Jan-2025).
+	 * @param string $service_id  Service ID.
+	 * @param string $staff_id    Staff ID ('' when using a resource or group).
+	 * @param string $date        Date in dd-MMM-yyyy format (e.g. 12-Jan-2025).
+	 * @param string $resource_id Optional. Resource ID (paid: resource booking).
+	 * @param string $group_id    Optional. Group ID (paid: collective booking).
 	 * @return array|WP_Error Array of slots or error.
 	 */
-	public function get_available_slots( $service_id, $staff_id, $date ) {
+	public function get_available_slots( $service_id, $staff_id, $date, $resource_id = '', $group_id = '' ) {
 		$params = array(
 			'service_id'    => sanitize_text_field( $service_id ),
-			'staff_id'      => sanitize_text_field( $staff_id ),
 			'selected_date' => sanitize_text_field( $date ),
 		);
+
+		if ( ! empty( $group_id ) ) {
+			$params['group_id'] = sanitize_text_field( $group_id );
+		} elseif ( ! empty( $resource_id ) ) {
+			$params['resource_id'] = sanitize_text_field( $resource_id );
+		} else {
+			$params['staff_id'] = sanitize_text_field( $staff_id );
+		}
+
 		return $this->request( 'GET', 'availableslots', $params );
 	}
 
@@ -361,6 +375,10 @@ final class GX_ZB_API_Client {
 		if ( ! empty( $args['assigned_staffs'] ) && is_array( $args['assigned_staffs'] ) ) {
 			$params['assigned_staffs'] = wp_json_encode( array_map( 'sanitize_text_field', $args['assigned_staffs'] ) );
 		}
+		// Paid: resources backing a resource-type service.
+		if ( ! empty( $args['assigned_resources'] ) && is_array( $args['assigned_resources'] ) ) {
+			$params['assigned_resources'] = wp_json_encode( array_map( 'sanitize_text_field', $args['assigned_resources'] ) );
+		}
 		if ( isset( $args['meeting_mode'] ) ) {
 			$params['meeting_mode'] = sanitize_text_field( $args['meeting_mode'] );
 		}
@@ -430,6 +448,10 @@ final class GX_ZB_API_Client {
 		}
 		if ( ! empty( $args['assigned_staffs'] ) && is_array( $args['assigned_staffs'] ) ) {
 			$params['assigned_staffs'] = wp_json_encode( array_map( 'sanitize_text_field', $args['assigned_staffs'] ) );
+		}
+		// Paid: resources backing a resource-type service.
+		if ( ! empty( $args['assigned_resources'] ) && is_array( $args['assigned_resources'] ) ) {
+			$params['assigned_resources'] = wp_json_encode( array_map( 'sanitize_text_field', $args['assigned_resources'] ) );
 		}
 		if ( isset( $args['status'] ) ) {
 			$valid_statuses = array( 'active', 'in_active' );

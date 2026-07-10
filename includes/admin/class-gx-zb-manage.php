@@ -307,7 +307,7 @@ final class GX_ZB_Manage {
 			echo '<p>' . esc_html__( 'No upcoming appointments today.', 'gx-zoho-bookings' ) . '</p>';
 		}
 
-		// FUTURE (paid plan): Revenue stats, staff filters, payment summaries would go here.
+		// Revenue stats + per-service/staff breakdowns live on the Reports page (GX_ZB_Reports).
 		echo '</div>';
 	}
 

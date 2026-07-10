@@ -617,7 +617,7 @@ final class GX_ZB_Admin {
 			<?php endif; ?>
 		</div>
 		<?php
-		// FUTURE (paid plan): team management / multiple workspace connection status would be shown here.
+		// Team management lives on the Staff page; the active workspace is chosen in Settings > Paid-plan features.
 	}
 
 	private function render_settings_tab(): void {

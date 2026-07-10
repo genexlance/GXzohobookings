@@ -15,8 +15,6 @@
     var staffField=document.getElementById('gx-zb-staff-field');
     var resourceField=document.getElementById('gx-zb-resource-field');
     var resourceSelect=document.getElementById('gx-zb-book-resource');
-    var resourceTimeField=document.getElementById('gx-zb-resource-time-field');
-    var resourceTime=document.getElementById('gx-zb-book-time');
     var cfg=window.gxZbBook||{};
     var ajaxUrl=cfg.ajaxUrl||'';
     var nonce=cfg.nonce||'';
@@ -67,13 +65,12 @@
       var opt=selectedOption();
       return !!(opt&&opt.getAttribute('data-service-type')==='resource');
     }
-    // Toggle the form between staff mode and resource mode.
+    // Toggle the form between staff mode and resource mode. Both modes use the
+    // same slot picker — the slots AJAX call sends whichever subject applies.
     function applyMode(){
       var res=isResourceService();
       if(staffField) staffField.style.display=res?'none':'';
-      if(slotsContainer) slotsContainer.style.display=res?'none':'';
       if(resourceField) resourceField.style.display=res?'':'none';
-      if(resourceTimeField) resourceTimeField.style.display=res?'':'none';
       if(staffSelect) staffSelect.required=!res;
       if(resourceSelect) resourceSelect.required=res;
       if(res){
@@ -86,7 +83,7 @@
           priceNote.innerHTML=(cost>0)?('<span class="gx-zb-price">'+cost.toFixed(2)+'</span> &mdash; Secure payment via Stripe'):'<span class="gx-zb-price">Free</span>';
         }
         updateResources();
-      } else { checkResourceReady(); }
+      }
     }
     function updateResources(){
       if(!resourceSelect) return;
@@ -102,12 +99,6 @@
         for(var i=0;i<data.length;i++){ html+='<option value="'+data[i].id+'">'+data[i].name+'</option>'; }
         resourceSelect.innerHTML=html;
       });
-    }
-    // Enable submit once a resource booking has resource + date + time.
-    function checkResourceReady(){
-      if(!isResourceService()) return;
-      var ok=resourceSelect&&resourceSelect.value&&dateInput&&dateInput.value&&resourceTime&&resourceTime.value;
-      if(submitBtn) submitBtn.disabled=!ok;
     }
     function updateStaff(){
       if(isResourceService()){ return; }
@@ -143,14 +134,16 @@
       });
     }
     function updateSlots(){
-      if(isResourceService()){ return; }
+      var res=isResourceService();
       var sidx=serviceSelect.selectedIndex;
       var serviceId=serviceSelect.options[sidx]?serviceSelect.options[sidx].value:'';
-      var staffId=staffSelect.value;
+      var staffId=res?'':staffSelect.value;
+      var resourceId=(res&&resourceSelect)?resourceSelect.value:'';
       var dateVal=dateInput.value;
-      if(!serviceId||!staffId||!dateVal){ slotsContainer.innerHTML=''; hiddenSlot.value=''; submitBtn.disabled=true; return; }
+      var subject=res?resourceId:staffId;
+      if(!serviceId||!subject||!dateVal){ slotsContainer.innerHTML=''; hiddenSlot.value=''; submitBtn.disabled=true; return; }
       slotsContainer.innerHTML='<p>Loading slots...</p>';
-      ajaxPost('gx_zb_slots',{service_id:serviceId,staff_id:staffId,date:dateVal},function(err,data){
+      ajaxPost('gx_zb_slots',{service_id:serviceId,staff_id:staffId,resource_id:resourceId,date:dateVal},function(err,data){
         if(err){
           slotsContainer.innerHTML='<p>Error loading slots</p>';
           return;
@@ -200,15 +193,12 @@
     if(dateInput){
       dateInput.addEventListener('change',function(){
         updateSlots();
-        checkResourceReady();
       });
     }
     if(resourceSelect){
-      resourceSelect.addEventListener('change',checkResourceReady);
-    }
-    if(resourceTime){
-      resourceTime.addEventListener('change',checkResourceReady);
-      resourceTime.addEventListener('input',checkResourceReady);
+      resourceSelect.addEventListener('change',function(){
+        updateSlots();
+      });
     }
     if(serviceSelect&&serviceSelect.options.length>1){
       applyMode();

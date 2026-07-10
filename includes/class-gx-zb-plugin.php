@@ -62,8 +62,8 @@ final class GX_ZB_Plugin {
 		// MCP endpoint lives on the REST API, which runs outside wp-admin.
 		GX_ZB_MCP_Server::instance()->register_hooks();
 
-		// FUTURE (paid plan): register REST routes for front-end booking
-		// creation and live slot pickers once those ship.
+		// Front-end booking + live slot pickers run through admin-ajax
+		// (GX_ZB_Payments) rather than custom REST routes.
 	}
 
 	/**

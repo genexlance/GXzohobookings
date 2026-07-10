@@ -220,19 +220,14 @@ final class GX_ZB_Payments {
 		$output .= '<input type="date" id="gx-zb-book-date" name="date" required>';
 		$output .= '</div>';
 
-		// Slots container (staff services).
+		// Slots container — used by staff AND resource services; the AJAX call
+		// passes whichever subject id applies, so availability is always real.
 		$output .= '<div class="gx-zb-slots" id="gx-zb-book-slots">';
 		$output .= '<p>' . esc_html__( 'Select a staff and date to see available slots', 'gx-zoho-bookings' ) . '</p>';
 		$output .= '</div>';
 
 		// Hidden slot input.
 		$output .= '<input type="hidden" id="gx-zb-book-slot" name="slot" value="">';
-
-		// Start-time input (resource services book a start time + duration range).
-		$output .= '<div class="gx-zb-field" id="gx-zb-resource-time-field" style="display:none;">';
-		$output .= '<label for="gx-zb-book-time">' . esc_html__( 'Start time', 'gx-zoho-bookings' ) . '</label>';
-		$output .= '<input type="time" id="gx-zb-book-time" name="resource_time" value="">';
-		$output .= '</div>';
 
 		// Customer details.
 		$output .= '<div class="gx-zb-field">';
@@ -375,11 +370,13 @@ final class GX_ZB_Payments {
 	public function ajax_slots() {
 		check_ajax_referer( 'gx_zb_book' );
 
-		$service_id = isset( $_POST['service_id'] ) ? sanitize_text_field( wp_unslash( $_POST['service_id'] ) ) : '';
-		$staff_id   = isset( $_POST['staff_id'] ) ? sanitize_text_field( wp_unslash( $_POST['staff_id'] ) ) : '';
-		$date       = isset( $_POST['date'] ) ? sanitize_text_field( wp_unslash( $_POST['date'] ) ) : '';
+		$service_id  = isset( $_POST['service_id'] ) ? sanitize_text_field( wp_unslash( $_POST['service_id'] ) ) : '';
+		$staff_id    = isset( $_POST['staff_id'] ) ? sanitize_text_field( wp_unslash( $_POST['staff_id'] ) ) : '';
+		$resource_id = isset( $_POST['resource_id'] ) ? sanitize_text_field( wp_unslash( $_POST['resource_id'] ) ) : '';
+		$date        = isset( $_POST['date'] ) ? sanitize_text_field( wp_unslash( $_POST['date'] ) ) : '';
 
-		if ( '' === $service_id || '' === $staff_id || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
+		// A subject (staff or resource) plus a valid date are required.
+		if ( '' === $service_id || ( '' === $staff_id && '' === $resource_id ) || ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
 			wp_send_json_error( __( 'Missing or invalid parameters.', 'gx-zoho-bookings' ) );
 		}
 
@@ -391,7 +388,7 @@ final class GX_ZB_Payments {
 		}
 
 		$api_client = GX_ZB_API_Client::instance();
-		$slots      = $api_client->get_available_slots( $service_id, $staff_id, $zoho_date );
+		$slots      = $api_client->get_available_slots( $service_id, $staff_id, $zoho_date, $resource_id );
 
 		if ( is_wp_error( $slots ) ) {
 			wp_send_json_error( $slots->get_error_message() );
@@ -415,7 +412,6 @@ final class GX_ZB_Payments {
 		$service_id   = isset( $_POST['service_id'] ) ? sanitize_text_field( wp_unslash( $_POST['service_id'] ) ) : '';
 		$staff_id     = isset( $_POST['staff_id'] ) ? sanitize_text_field( wp_unslash( $_POST['staff_id'] ) ) : '';
 		$resource_id  = isset( $_POST['resource_id'] ) ? sanitize_text_field( wp_unslash( $_POST['resource_id'] ) ) : '';
-		$res_time     = isset( $_POST['resource_time'] ) ? sanitize_text_field( wp_unslash( $_POST['resource_time'] ) ) : '';
 		$is_resource  = ( '' !== $resource_id );
 		$date       = sanitize_text_field( wp_unslash( $_POST['date'] ?? '' ) );
 		$slot       = sanitize_text_field( wp_unslash( $_POST['slot'] ?? '' ) );
@@ -439,18 +435,11 @@ final class GX_ZB_Payments {
 		if ( ! preg_match( '/^\d{4}-\d{2}-\d{2}$/', $date ) ) {
 			$errors[] = __( 'A valid date is required.', 'gx-zoho-bookings' );
 		}
-		if ( $is_resource ) {
-			// Resource booking: a resource + start time replace staff + slot.
-			if ( ! preg_match( '/^\d{2}:\d{2}$/', $res_time ) ) {
-				$errors[] = __( 'A valid start time is required.', 'gx-zoho-bookings' );
-			}
-		} else {
-			if ( '' === $staff_id ) {
-				$errors[] = __( 'Staff is required.', 'gx-zoho-bookings' );
-			}
-			if ( empty( $slot ) ) {
-				$errors[] = __( 'Time slot is required.', 'gx-zoho-bookings' );
-			}
+		if ( ! $is_resource && '' === $staff_id ) {
+			$errors[] = __( 'Staff is required.', 'gx-zoho-bookings' );
+		}
+		if ( empty( $slot ) ) {
+			$errors[] = __( 'Time slot is required.', 'gx-zoho-bookings' );
 		}
 		if ( empty( $name ) ) {
 			$errors[] = __( 'Name is required.', 'gx-zoho-bookings' );
@@ -507,8 +496,9 @@ final class GX_ZB_Payments {
 
 		// Build the exact payload the API client expects: from_time in Zoho
 		// datetime format + customer_details. Combine the Y-m-d date with the
-		// slot ("10:00 AM" or "14:30") — or the start time for resource bookings.
-		$from_time = $this->build_from_time( $date, $is_resource ? $res_time : $slot );
+		// slot ("10:00 AM" or "14:30") — resource bookings pick slots too, from
+		// the resource's real availability.
+		$from_time = $this->build_from_time( $date, $slot );
 		if ( '' === $from_time ) {
 			$this->redirect_with_result( $return_url, 'error', __( 'Invalid time slot.', 'gx-zoho-bookings' ) );
 		}

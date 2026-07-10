@@ -3,7 +3,7 @@
  * Plugin Name:       GX Zoho Bookings
  * Plugin URI:        https://genexmarketing.com/plugins/gx-zoho-bookings/
  * Description:       Connect Zoho Bookings to WordPress. Embed your booking page or connect via OAuth to display services and manage appointments — dashboard, booking creation, reschedule and status updates — right inside wp-admin. Free-plan friendly.
- * Version:           2.0.0
+ * Version:           2.1.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            Genex Marketing Agency Ltd
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'GX_ZB_VERSION', '2.0.0' );
+define( 'GX_ZB_VERSION', '2.1.0' );
 define( 'GX_ZB_FILE', __FILE__ );
 define( 'GX_ZB_DIR', plugin_dir_path( __FILE__ ) );
 define( 'GX_ZB_URL', plugin_dir_url( __FILE__ ) );

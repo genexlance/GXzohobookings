@@ -211,6 +211,8 @@ final class GX_ZB_Services_Admin {
 		$staff_list = is_wp_error( $staff ) ? [] : $staff;
 		$workspaces = $api_client->get_workspaces();
 		$workspace_list = is_wp_error( $workspaces ) ? array() : $workspaces;
+		$resources      = $api_client->get_resources();
+		$resource_list  = is_wp_error( $resources ) ? array() : $resources;
 		?>
 		<div class="wrap gx-zb-services">
 			<h1><?php esc_html_e( 'Add New Service', 'gx-zoho-bookings' ); ?></h1>
@@ -241,6 +243,16 @@ final class GX_ZB_Services_Admin {
 					<tr>
 						<th><label for="gx-zb-service-name"><?php esc_html_e( 'Name', 'gx-zoho-bookings' ); ?></label></th>
 						<td><input type="text" id="gx-zb-service-name" name="name" required class="regular-text"></td>
+					</tr>
+					<tr>
+						<th><label for="gx-zb-service-type"><?php esc_html_e( 'Service Type', 'gx-zoho-bookings' ); ?></label></th>
+						<td>
+							<select id="gx-zb-service-type" name="service_type">
+								<option value="one_on_one"><?php esc_html_e( 'One-on-one (staff)', 'gx-zoho-bookings' ); ?></option>
+								<option value="resource"><?php esc_html_e( 'Resource (room, equipment — paid plan)', 'gx-zoho-bookings' ); ?></option>
+							</select>
+							<p class="description"><?php esc_html_e( 'Resource services are booked against a resource instead of a staff member and need a paid Zoho Bookings plan. Group/collective services can only be created in the Zoho Bookings admin (no API support).', 'gx-zoho-bookings' ); ?></p>
+						</td>
 					</tr>
 					<tr>
 						<th><label for="gx-zb-service-duration"><?php esc_html_e( 'Duration (minutes)', 'gx-zoho-bookings' ); ?></label></th>
@@ -301,6 +313,27 @@ final class GX_ZB_Services_Admin {
 							<?php endif; ?>
 						</td>
 					</tr>
+					<tr>
+						<th><label><?php esc_html_e( 'Assign Resources', 'gx-zoho-bookings' ); ?></label></th>
+						<td>
+							<?php if ( ! empty( $resource_list ) ) : ?>
+								<?php foreach ( $resource_list as $r ) :
+									$rid   = isset( $r['id'] ) ? (string) $r['id'] : '';
+									$rname = isset( $r['name'] ) ? (string) $r['name'] : $rid;
+									if ( '' === $rid ) {
+										continue;
+									}
+									?>
+									<label style="display:block; margin-bottom:4px;">
+										<input type="checkbox" name="assigned_resources[]" value="<?php echo esc_attr( $rid ); ?>"> <?php echo esc_html( $rname ); ?>
+									</label>
+								<?php endforeach; ?>
+								<p class="description"><?php esc_html_e( 'Only used when Service Type is Resource.', 'gx-zoho-bookings' ); ?></p>
+							<?php else : ?>
+								<p class="description"><?php esc_html_e( 'No resources found. Resources are created in the Zoho Bookings admin (paid plan).', 'gx-zoho-bookings' ); ?></p>
+							<?php endif; ?>
+						</td>
+					</tr>
 				</table>
 				<?php submit_button( esc_html__( 'Create Service', 'gx-zoho-bookings' ) ); ?>
 			</form>
@@ -319,7 +352,17 @@ final class GX_ZB_Services_Admin {
 		$api_client = GX_ZB_API_Client::instance();
 		$staff      = $api_client->get_staff();
 		$staff_list = is_wp_error( $staff ) ? array() : $staff;
+		$resources     = $api_client->get_resources();
+		$resource_list = is_wp_error( $resources ) ? array() : $resources;
 		$id         = isset( $service['id'] ) ? $service['id'] : ( isset( $service['service_id'] ) ? $service['service_id'] : '' );
+
+		// Assigned resource ids, tolerating both id-list and object-list shapes.
+		$assigned_res = array();
+		if ( ! empty( $service['assigned_resources'] ) && is_array( $service['assigned_resources'] ) ) {
+			foreach ( $service['assigned_resources'] as $ar ) {
+				$assigned_res[] = is_array( $ar ) ? ( isset( $ar['id'] ) ? (string) $ar['id'] : '' ) : (string) $ar;
+			}
+		}
 
 		$cur_mode = isset( $service['meeting_mode'] ) ? $service['meeting_mode'] : 'offline';
 		$cur_type = isset( $service['meeting_type'] ) ? $service['meeting_type'] : '';
@@ -425,8 +468,29 @@ final class GX_ZB_Services_Admin {
 							<?php endif; ?>
 						</td>
 					</tr>
+					<tr>
+						<th><label><?php esc_html_e( 'Assign Resources', 'gx-zoho-bookings' ); ?></label></th>
+						<td>
+							<?php if ( ! empty( $resource_list ) ) : ?>
+								<?php
+								foreach ( $resource_list as $r ) :
+									$rid   = isset( $r['id'] ) ? (string) $r['id'] : '';
+									$rname = isset( $r['name'] ) ? (string) $r['name'] : $rid;
+									if ( '' === $rid ) {
+										continue;
+									}
+									?>
+									<label style="display:block; margin-bottom:4px;">
+										<input type="checkbox" name="assigned_resources[]" value="<?php echo esc_attr( $rid ); ?>" <?php checked( in_array( $rid, $assigned_res, true ) ); ?>> <?php echo esc_html( $rname ); ?>
+									</label>
+								<?php endforeach; ?>
+								<p class="description"><?php esc_html_e( 'Only used by resource-type services (paid plan). Group/collective services are managed in the Zoho Bookings admin.', 'gx-zoho-bookings' ); ?></p>
+							<?php else : ?>
+								<p class="description"><?php esc_html_e( 'No resources found. Resources are created in the Zoho Bookings admin (paid plan).', 'gx-zoho-bookings' ); ?></p>
+							<?php endif; ?>
+						</td>
+					</tr>
 				</table>
-				<?php // FUTURE (paid plan): resource-service and group-booking fields. ?>
 				<?php submit_button( esc_html__( 'Save Changes', 'gx-zoho-bookings' ) ); ?>
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=gx-zb-services' ) ); ?>" class="button"><?php esc_html_e( 'Cancel', 'gx-zoho-bookings' ); ?></a>
 			</form>
@@ -518,6 +582,19 @@ final class GX_ZB_Services_Admin {
 			$assigned = array_map( 'sanitize_text_field', wp_unslash( $_POST['assigned_staffs'] ) );
 		}
 
+		// Paid: resource-type services + assigned resources.
+		$service_type = isset( $_POST['service_type'] ) ? sanitize_text_field( wp_unslash( $_POST['service_type'] ) ) : '';
+		if ( ! in_array( $service_type, array( 'one_on_one', 'resource' ), true ) ) {
+			$service_type = '';
+		}
+		$assigned_resources = array();
+		if ( isset( $_POST['assigned_resources'] ) && is_array( $_POST['assigned_resources'] ) ) {
+			$assigned_resources = array_map( 'sanitize_text_field', wp_unslash( $_POST['assigned_resources'] ) );
+		}
+		if ( 'resource' === $service_type && empty( $assigned_resources ) ) {
+			$this->redirect_list( 'service_save_failed', __( 'Assign at least one resource to a resource-type service.', 'gx-zoho-bookings' ) );
+		}
+
 		if ( '' === $name ) {
 			$this->redirect_list( 'service_save_failed', __( 'Service name is required.', 'gx-zoho-bookings' ) );
 		}
@@ -537,6 +614,13 @@ final class GX_ZB_Services_Admin {
 		);
 		if ( null !== $cost ) {
 			$args['cost'] = $cost;
+		}
+		// service_type only applies at creation (Zoho cannot change it later).
+		if ( '' === $id && '' !== $service_type ) {
+			$args['service_type'] = $service_type;
+		}
+		if ( ! empty( $assigned_resources ) ) {
+			$args['assigned_resources'] = $assigned_resources;
 		}
 
 		$client = GX_ZB_API_Client::instance();

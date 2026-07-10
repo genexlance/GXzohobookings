@@ -86,6 +86,8 @@ All write operations (create, reschedule, status change) invalidate the plugin's
 
 The plugin exposes a Model Context Protocol (MCP) server over HTTP, allowing AI agents to query services and manage bookings. Enable the MCP endpoint and authenticate with an API key to give your AI booking agent controlled access.
 
+**Voice agents**: for platform-specific setup — Vapi, ElevenLabs Agents, Bland, Dograh, and xAI Grok Voice — see [VOICE-AGENTS.md](VOICE-AGENTS.md).
+
 ### Enable the MCP endpoint
 
 1. Go to **Settings → Zoho Bookings → AI Agent Access (MCP)**.
@@ -311,6 +313,12 @@ To use resource booking, group booking, or custom fields you need a paid Zoho Bo
 **View reports** under **Zoho Bookings → Reports**: total revenue, booking counts by status, revenue by service and bookings per staff, with a date-range filter. The same data is available to AI agents via the MCP tool `get_reports`.
 
 ## Changelog
+
+### 2.1.0 — Resource services from WP, real resource availability, voice-agent guide
+- **Create resource services from WordPress**: the Services page now has a Service Type selector (one-on-one / resource) and Assign Resources checkboxes on both the create and edit forms (`service_type` + `assigned_resources` API params, web-verified). Group/collective services still must be created in the Zoho Bookings admin — the API has no group creation support.
+- **Real resource availability**: the booking form's resource flow now uses the same slot picker as staff bookings — `availableslots` is queried with `resource_id` (also supports `group_id` in the API client), so callers can only pick genuinely free times. The free-typed start-time input is gone.
+- **Voice agents guide**: new [VOICE-AGENTS.md](VOICE-AGENTS.md) with step-by-step instructions for connecting the MCP endpoint to Vapi, ElevenLabs Agents, Bland, Dograh, and xAI Grok Voice, plus a suggested agent prompt and troubleshooting table.
+- Housekeeping: stale `FUTURE (paid plan)` comments removed/corrected now that those features exist.
 
 ### 2.0.0 — Paid-plan features
 - **Resource booking**: services can be booked against a specific resource with a start and end time. New API support plus MCP tools `book_resource` and `list_resources`.

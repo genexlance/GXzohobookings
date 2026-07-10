@@ -392,7 +392,7 @@ final class GX_ZB_Shortcodes {
 
 		$output .= '</div>';
 
-		// FUTURE (paid plan): allow staff selection, show available slots.
+		// Staff selection + live slots live in the booking form ([zoho_bookings_book] block), not this card.
 
 		return $output;
 	}
